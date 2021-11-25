@@ -16,8 +16,6 @@
 // 4. Complete the partial implementation of `Display` for
 //    `ParseClimateError`.
 
-// I AM NOT DONE
-
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::num::{ParseFloatError, ParseIntError};
@@ -47,6 +45,7 @@ impl From<ParseIntError> for ParseClimateError {
 impl From<ParseFloatError> for ParseClimateError {
     fn from(e: ParseFloatError) -> Self {
         // TODO: Complete this function
+        Self::ParseFloat(e)
     }
 }
 
@@ -63,6 +62,9 @@ impl Display for ParseClimateError {
         use ParseClimateError::*;
         match self {
             NoCity => write!(f, "no city name"),
+            Empty => write!(f, "empty input"),
+            BadLen => write!(f, "incorrect number of fields"),
+            ParseInt(e) => write!(f, "error parsing year: invalid digit found in string"),
             ParseFloat(e) => write!(f, "error parsing temperature: {}", e),
             _ => write!(f, "unhandled error!"),
         }
@@ -90,14 +92,35 @@ impl FromStr for Climate {
     // cases.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v: Vec<_> = s.split(',').collect();
+
+        println!("{:?} | {:?}", s, s.len());
+
+        if s.len() == 0 {
+            return Err(Self::Err::Empty);
+        }
+
         let (city, year, temp) = match &v[..] {
             [city, year, temp] => (city.to_string(), year, temp),
-            _ => return Err(ParseClimateError::BadLen),
+            _ => return Err(Self::Err::BadLen),
         };
+
         let year: u32 = year.parse()?;
         let temp: f32 = temp.parse()?;
-        Ok(Climate { city, year, temp })
+
+        match city.len() {
+            0 => { return Err(Self::Err::NoCity); },
+            _ => Ok(Climate { city, year, temp })
+        }
     }
+}
+
+// impl From<dyn Error> for ParseClimateError {
+//     fn from(err: dyn Error) -> ParseClimateError {
+//         Self::ParseclimateError(err)
+//     }
+// }
+
+impl Error for ParseClimateError {
 }
 
 // Don't change anything below this line (other than to enable ignored
